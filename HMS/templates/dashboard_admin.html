@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — MediCore HMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/medicore.css">
+</head>
+<body>
+<div class="mobile-topbar" id="mobileTopbar">
+  <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span><span></span></button>
+  <a href="/dashboard" class="mobile-brand"><div class="mobile-brand-icon">🏥</div><strong>MediCore</strong></a>
+</div>
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand"><a href="/dashboard" class="brand-logo"><div class="brand-icon">🏥</div><div class="brand-text"><strong>MediCore</strong><span>Hospital MS</span></div></a></div>
+  <div class="sidebar-user"><div class="user-avatar" id="userAvatar">A</div><div class="user-info"><div class="user-name" id="userName">Loading…</div><span class="role-pill" id="userRole"></span></div></div>
+  <nav class="sidebar-nav" id="sidebarNav"></nav>
+  <div class="sidebar-footer"><a href="#" class="logout-btn" onclick="doLogout()"><span>⏻</span> Sign Out</a></div>
+</aside>
+
+<main class="main">
+  <header class="topbar">
+    <div>
+      <div class="page-title">Dashboard</div>
+      <div class="breadcrumb" style="margin-top:2px;"><span class="breadcrumb-current">Overview</span></div>
+    </div>
+    <div class="topbar-actions">
+      <a href="/register-patient" class="topbar-btn btn-secondary">➕ New Patient</a>
+      <a href="/appointments/schedule" class="topbar-btn btn-accent">📅 Schedule</a>
+    </div>
+  </header>
+
+  <div class="content-area">
+    <div id="alertContainer" class="alerts"></div>
+
+    <!-- Stat cards (skeleton initially) -->
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card stat-blue"><div class="skeleton skeleton-card" style="height:80px;"></div></div>
+      <div class="stat-card stat-green"><div class="skeleton skeleton-card" style="height:80px;"></div></div>
+      <div class="stat-card stat-amber"><div class="skeleton skeleton-card" style="height:80px;"></div></div>
+      <div class="stat-card stat-rose"><div class="skeleton skeleton-card" style="height:80px;"></div></div>
+      <div class="stat-card stat-violet"><div class="skeleton skeleton-card" style="height:80px;"></div></div>
+    </div>
+
+    <div class="two-col">
+      <!-- Quick actions -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="card-title">⚡ Quick Actions</div>
+            <div class="card-subtitle">Common administrative tasks</div>
+          </div>
+          <span class="badge badge-ADMIN">Full Access</span>
+        </div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:8px;">
+          <a href="/register-patient"      class="topbar-btn btn-secondary" style="justify-content:flex-start;">➕ Register New Patient</a>
+          <a href="/appointments/schedule" class="topbar-btn btn-secondary" style="justify-content:flex-start;">📅 Schedule Appointment</a>
+          <a href="/patients"              class="topbar-btn btn-secondary" style="justify-content:flex-start;">👥 Patient Directory</a>
+          <a href="/admin/users"           class="topbar-btn btn-secondary" style="justify-content:flex-start;">👤 Manage Users</a>
+          <a href="/admin/audit-log"       class="topbar-btn btn-secondary" style="justify-content:flex-start;">📋 Audit Log</a>
+          <a href="/billing"               class="topbar-btn btn-secondary" style="justify-content:flex-start;">💰 Billing Overview</a>
+        </div>
+      </div>
+
+      <!-- RBAC summary -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="card-title">🔐 Access Control</div>
+            <div class="card-subtitle">Role permissions at a glance</div>
+          </div>
+        </div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);">
+            <span class="badge badge-ADMIN">ADMIN</span>
+            <span style="font-size:13px;color:var(--text-secondary);">Full system access — all modules</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);">
+            <span class="badge badge-DOCTOR">DOCTOR</span>
+            <span style="font-size:13px;color:var(--text-secondary);">Patients, records, appointments</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);">
+            <span class="badge badge-RECEPTIONIST">RECEPTIONIST</span>
+            <span style="font-size:13px;color:var(--text-secondary);">Registration and scheduling</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);">
+            <span class="badge badge-BILLING">BILLING</span>
+            <span style="font-size:13px;color:var(--text-secondary);">Invoices and payments only</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="/static/js/medicore.js"></script>
+<script>
+HMS.init();
+window.onHMSReady = function() {
+  HMS.api.get('/api/dashboard/stats').then(function(d) {
+    if (!d.ok) return;
+    var s = d.stats;
+    document.getElementById('statsGrid').innerHTML =
+      '<div class="stat-card stat-blue"><div class="stat-icon-wrap stat-icon-blue">👥</div><div class="stat-value">' + s.total_patients + '</div><div class="stat-label">Total Patients</div></div>' +
+      '<div class="stat-card stat-green"><div class="stat-icon-wrap stat-icon-green">🩺</div><div class="stat-value">' + s.active_doctors + '</div><div class="stat-label">Active Doctors</div></div>' +
+      '<div class="stat-card stat-amber"><div class="stat-icon-wrap stat-icon-amber">📅</div><div class="stat-value">' + s.today_appointments + '</div><div class="stat-label">Today\'s Appointments</div></div>' +
+      '<div class="stat-card stat-rose"><div class="stat-icon-wrap stat-icon-rose">⏳</div><div class="stat-value">' + s.pending_bills + '</div><div class="stat-label">Pending Bills</div></div>' +
+      '<div class="stat-card stat-violet"><div class="stat-icon-wrap stat-icon-violet">💵</div><div class="stat-value">$' + parseFloat(s.total_revenue).toFixed(0) + '</div><div class="stat-label">Total Revenue</div></div>';
+  });
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Billing — MediCore HMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/medicore.css">
+</head>
+<body>
+<div class="mobile-topbar" id="mobileTopbar">
+  <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span><span></span></button>
+  <a href="/dashboard" class="mobile-brand"><div class="mobile-brand-icon">🏥</div><strong>MediCore</strong></a>
+</div>
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand"><a href="/dashboard" class="brand-logo"><div class="brand-icon">🏥</div><div class="brand-text"><strong>MediCore</strong><span>Hospital MS</span></div></a></div>
+  <div class="sidebar-user"><div class="user-avatar" id="userAvatar">U</div><div class="user-info"><div class="user-name" id="userName">Loading…</div><span class="role-pill" id="userRole"></span></div></div>
+  <nav class="sidebar-nav" id="sidebarNav"></nav>
+  <div class="sidebar-footer"><a href="#" class="logout-btn" onclick="doLogout()"><span>⏻</span> Sign Out</a></div>
+</aside>
+
+<main class="main">
+  <header class="topbar">
+    <div><div class="page-title">Billing &amp; Payments</div></div>
+  </header>
+  <div class="content-area">
+    <div id="alertContainer" class="alerts"></div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-left">
+          <div class="card-title">💰 All Invoices</div>
+          <div class="card-subtitle" id="billSubtitle">Manage and process patient payments</div>
+        </div>
+        <span class="badge badge-BILLING">Finance Access</span>
+      </div>
+      <div id="tableContent"></div>
+      <!-- Pagination rendered separately — only shown when needed -->
+      <div id="paginationArea"></div>
+    </div>
+
+    <div class="card" style="border-left:3px solid var(--warning-bdr);background:var(--warning-bg);">
+      <div class="card-body" style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:20px;">ℹ️</span>
+        <div>
+          <strong style="font-size:13px;">Billing Access Note</strong>
+          <p class="text-muted" style="margin-top:2px;">You can view and process payments. Patient medical records are not accessible from this role.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="/static/js/medicore.js"></script>
+<script>
+var _page    = 1;
+var _loading = false;   // guard: prevent concurrent/recursive loads
+var _ready   = false;   // guard: onHMSReady fires only once
+
+HMS.init();
+
+// onHMSReady can fire twice (once from cache, once from fresh fetch).
+// The _ready flag ensures load() is only triggered once.
+window.onHMSReady = function() {
+  if (_ready) return;
+  _ready = true;
+  load();
+};
+
+function load() {
+  // Prevent recursive or concurrent calls
+  if (_loading) return;
+  _loading = true;
+
+  document.getElementById('tableContent').innerHTML = HMS.skeletonRows(7, 5);
+  document.getElementById('paginationArea').innerHTML = '';
+
+  HMS.api.get('/api/billing?page=' + _page + '&per_page=20')
+    .then(function(d) {
+      _loading = false;
+
+      if (!d.ok) {
+        HMS.showAlert('Failed to load billing data: ' + d.error, 'error');
+        return;
+      }
+
+      var pg = d.pagination;
+      document.getElementById('billSubtitle').textContent =
+        pg.total + ' invoice' + (pg.total !== 1 ? 's' : '');
+
+      if (!d.bills.length) {
+        document.getElementById('tableContent').innerHTML =
+          '<div class="empty-state"><div class="empty-icon">💰</div>' +
+          '<h4>No billing records</h4>' +
+          '<p>Bills are created from the Appointments page.</p></div>';
+        return;
+      }
+
+      var rows = d.bills.map(function(b) {
+        // Only Pending bills get a Pay button; all others show status only
+        var action = b.payment_status === 'Pending'
+          ? '<button class="topbar-btn btn-success btn-xs" ' +
+            'id="pay-btn-' + b.bill_id + '" ' +
+            'onclick="pay(' + b.bill_id + ',' + b.total_amount + ',this)">' +
+            '💵 Pay</button>'
+          : '<span class="text-muted">—</span>';
+
+        return '<tr>' +
+          '<td class="col-id">#' + b.bill_id + '</td>' +
+          '<td class="col-name">' + b.patient_first + ' ' + b.patient_last + '</td>' +
+          '<td class="text-sm hide-mobile">$' + parseFloat(b.amount).toFixed(2) + '</td>' +
+          '<td class="text-sm hide-mobile">$' + parseFloat(b.tax_amount).toFixed(2) + '</td>' +
+          '<td class="fw-600">$' + parseFloat(b.total_amount).toFixed(2) + '</td>' +
+          '<td>' + HMS.statusBadge(b.payment_status) + '</td>' +
+          '<td>' + action + '</td>' +
+          '</tr>';
+      }).join('');
+
+      document.getElementById('tableContent').innerHTML =
+        '<div class="table-container"><table class="data-table">' +
+        '<thead><tr>' +
+          '<th>Bill ID</th><th>Patient</th>' +
+          '<th class="hide-mobile">Subtotal</th>' +
+          '<th class="hide-mobile">Tax</th>' +
+          '<th>Total</th><th>Status</th><th>Action</th>' +
+        '</tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+        '</table></div>';
+
+      // Only render pagination if there is more than one page
+      if (pg.total_pages > 1) {
+        document.getElementById('paginationArea').innerHTML =
+          HMS.renderPagination(pg, function(p) {
+            _page = p;
+            load();
+          });
+      }
+    })
+    .catch(function(err) {
+      _loading = false;
+      HMS.showAlert('Network error loading billing data.', 'error');
+    });
+}
+
+function pay(id, amount, btn) {
+  // Immediately disable the button to prevent double-click / double-pay
+  btn.disabled = true;
+  btn.textContent = 'Processing…';
+
+  HMS.api.post('/api/billing/process/' + id, {
+    payment_method: 'Cash',
+    paid_amount: amount
+  }).then(function(d) {
+    if (d.ok) {
+      HMS.showAlert('Payment processed successfully.', 'success');
+      // Reload table to show updated status — reset _loading first
+      _loading = false;
+      load();
+    } else {
+      HMS.showAlert(d.error || 'Payment failed.', 'error');
+      // Re-enable button so they can retry
+      btn.disabled = false;
+      btn.textContent = '💵 Pay';
+    }
+  }).catch(function() {
+    HMS.showAlert('Network error. Please try again.', 'error');
+    btn.disabled = false;
+    btn.textContent = '💵 Pay';
+  });
+}
+</script>
+</body>
+</html>

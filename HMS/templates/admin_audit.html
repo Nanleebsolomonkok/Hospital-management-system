@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audit Log — MediCore HMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/medicore.css">
+</head>
+<body>
+<div class="mobile-topbar" id="mobileTopbar"><button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span><span></span></button><a href="/dashboard" class="mobile-brand"><div class="mobile-brand-icon">🏥</div><strong>MediCore</strong></a></div>
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand"><a href="/dashboard" class="brand-logo"><div class="brand-icon">🏥</div><div class="brand-text"><strong>MediCore</strong><span>Hospital MS</span></div></a></div>
+  <div class="sidebar-user"><div class="user-avatar" id="userAvatar">A</div><div class="user-info"><div class="user-name" id="userName">Loading…</div><span class="role-pill" id="userRole"></span></div></div>
+  <nav class="sidebar-nav" id="sidebarNav"></nav>
+  <div class="sidebar-footer"><a href="#" class="logout-btn" onclick="doLogout()"><span>⏻</span> Sign Out</a></div>
+</aside>
+<main class="main">
+  <header class="topbar"><div><div class="page-title">System Audit Log</div></div><div><span class="badge badge-ADMIN">Admin Only</span></div></header>
+  <div class="content-area">
+    <div id="alertContainer" class="alerts"></div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-left"><div class="card-title">📋 Audit Trail</div><div class="card-subtitle">Complete record of all database changes</div></div>
+        <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" class="search-input" id="searchInput" placeholder="Filter by user or table…"></div>
+      </div>
+      <div id="tableContent"></div>
+      <div id="paginationArea"></div>
+    </div>
+  </div>
+</main>
+<script src="/static/js/medicore.js"></script>
+<script>
+var _page=1, _allLogs=[];
+HMS.init();
+window.onHMSReady=function(){load();};
+function load(){
+  document.getElementById('tableContent').innerHTML=HMS.skeletonRows(5,8);
+  HMS.api.get('/api/admin/audit-log?page='+_page+'&per_page=25').then(function(d){
+    if(!d.ok){HMS.showAlert('Access denied.','error');return;}
+    _allLogs=d.logs;
+    render(d.logs,d.pagination);
+  });
+}
+function render(logs,pg){
+  if(!logs.length){document.getElementById('tableContent').innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><h4>No audit records</h4></div>';document.getElementById('paginationArea').innerHTML='';return;}
+  var rows=logs.map(function(log){
+    var det=(log.new_values||'—');if(det.length>55)det=det.substring(0,55)+'…';
+    return '<tr>'+
+      '<td class="text-sm" style="white-space:nowrap;color:var(--text-secondary);">'+(log.action_timestamp||'—')+'</td>'+
+      '<td><span class="font-mono" style="color:var(--info);">'+(log.table_name||'—')+'</span></td>'+
+      '<td>'+HMS.statusBadge(log.action||'UNKNOWN')+'</td>'+
+      '<td class="text-sm hide-mobile" style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+(log.new_values||'')+'">'+det+'</td>'+
+      '<td><span class="font-mono">'+(log.user_name||'SYSTEM')+'</span></td>'+
+      '</tr>';
+  }).join('');
+  document.getElementById('tableContent').innerHTML='<div class="table-container"><table class="data-table"><thead><tr><th>Timestamp</th><th>Table</th><th>Action</th><th class="hide-mobile">Details</th><th>User</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  document.getElementById('paginationArea').innerHTML=HMS.renderPagination(pg,function(p){_page=p;load();});
+}
+HMS.setupLiveSearch('searchInput',function(q){
+  if(!q){load();return;}
+  var filtered=_allLogs.filter(function(l){return (l.table_name||'').toLowerCase().includes(q.toLowerCase())||(l.user_name||'').toLowerCase().includes(q.toLowerCase());});
+  render(filtered,null);
+});
+</script>
+</body>
+</html>

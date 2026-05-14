@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Management — MediCore HMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/medicore.css">
+</head>
+<body>
+<div class="mobile-topbar" id="mobileTopbar"><button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span><span></span></button><a href="/dashboard" class="mobile-brand"><div class="mobile-brand-icon">🏥</div><strong>MediCore</strong></a></div>
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand"><a href="/dashboard" class="brand-logo"><div class="brand-icon">🏥</div><div class="brand-text"><strong>MediCore</strong><span>Hospital MS</span></div></a></div>
+  <div class="sidebar-user"><div class="user-avatar" id="userAvatar">A</div><div class="user-info"><div class="user-name" id="userName">Loading…</div><span class="role-pill" id="userRole"></span></div></div>
+  <nav class="sidebar-nav" id="sidebarNav"></nav>
+  <div class="sidebar-footer"><a href="#" class="logout-btn" onclick="doLogout()"><span>⏻</span> Sign Out</a></div>
+</aside>
+<main class="main">
+  <header class="topbar"><div><div class="page-title">User Management</div></div><div><span class="badge badge-ADMIN">Admin Only</span></div></header>
+  <div class="content-area">
+    <div id="alertContainer" class="alerts"></div>
+    <div id="tempPwBanner" style="display:none;" class="alert alert-success" style="margin-bottom:16px;"></div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-left"><div class="card-title">👤 System Users</div><div class="card-subtitle" id="userCount">Loading…</div></div>
+      </div>
+      <div id="tableContent"></div>
+    </div>
+    <div class="card" style="border-left:3px solid var(--danger);background:var(--danger-bg);border-color:var(--danger-bdr);">
+      <div class="card-body" style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:20px;">🔐</span>
+        <div><strong style="font-size:13px;">Role-Based Access Control</strong><p class="text-muted" style="margin-top:2px;">Roles control what each user can view and do within the system. Only admins can manage users.</p></div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="/static/js/medicore.js"></script>
+<script>
+HMS.init();
+window.onHMSReady=function(){load();};
+function load(){
+  document.getElementById('tableContent').innerHTML=HMS.skeletonRows(7,5);
+  HMS.api.get('/api/admin/users').then(function(d){
+    if(!d.ok){HMS.showAlert('Access denied.','error');return;}
+    document.getElementById('userCount').textContent=d.users.length+' user'+(d.users.length!==1?'s':'')+' registered';
+    if(!d.users.length){document.getElementById('tableContent').innerHTML='<div class="empty-state"><div class="empty-icon">👤</div><h4>No users found</h4></div>';return;}
+    var rows=d.users.map(function(u){
+      var mustChange=u.must_change_password?'<br><span style="font-size:11px;color:var(--warning);">⚠ Must change password</span>':'';
+      var active=u.is_active?'<span class="badge badge-Active">Active</span>':'<span class="badge badge-Inactive">Inactive</span>';
+      var toggleLabel=u.is_active?'Deactivate':'Activate';
+      var toggleClass=u.is_active?'btn-danger':'btn-success';
+      return '<tr><td class="col-id">#'+u.user_id+'</td>'+
+        '<td><strong>'+u.username+'</strong>'+mustChange+'</td>'+
+        '<td>'+u.full_name+'</td>'+
+        '<td>'+HMS.statusBadge(u.role)+'</td>'+
+        '<td class="text-sm hide-mobile">'+(u.email||'—')+'</td>'+
+        '<td>'+active+'</td>'+
+        '<td style="display:flex;gap:5px;flex-wrap:wrap;">'+
+        '<button class="topbar-btn btn-warning btn-xs" onclick="resetPw('+u.user_id+',\''+u.username+'\')">🔑 Reset</button>'+
+        '<button class="topbar-btn '+toggleClass+' btn-xs" onclick="toggle('+u.user_id+',\''+u.username+'\')">'+toggleLabel+'</button>'+
+        '</td></tr>';
+    }).join('');
+    document.getElementById('tableContent').innerHTML='<div class="table-container"><table class="data-table"><thead><tr><th>ID</th><th>Username</th><th>Full Name</th><th>Role</th><th class="hide-mobile">Email</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  });
+}
+function resetPw(id,name){
+  if(!confirm('Reset password for '+name+'?'))return;
+  HMS.api.post('/api/admin/users/'+id+'/reset-password',{}).then(function(d){
+    if(d.ok){
+      HMS.showAlert('Password reset for '+name+'. Temporary: '+d.temp_password,'success',0);
+      load();
+    } else HMS.showAlert(d.error||'Reset failed.','error');
+  });
+}
+function toggle(id,name){
+  HMS.api.post('/api/admin/users/'+id+'/toggle-active',{}).then(function(d){
+    HMS.showAlert(d.message||(d.ok?'Updated.':'Error.'),d.ok?'success':'error');
+    if(d.ok)load();
+  });
+}
+</script>
+</body>
+</html>

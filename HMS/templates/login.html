@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — MediCore HMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--brand:#2563eb;--brand-dark:#1d4ed8;--text-1:#0f172a;--text-2:#475569;--text-3:#94a3b8;--border:#e2e8f0;--bg:#f1f5f9;--danger:#ef4444;--success:#10b981}
+    html{-webkit-font-smoothing:antialiased}
+    body{font-family:'Inter',sans-serif;min-height:100vh;display:flex;background:#0f172a}
+
+    /* Left panel */
+    .left{flex:1;display:flex;flex-direction:column;justify-content:space-between;padding:36px 48px;position:relative;overflow:hidden;background:linear-gradient(150deg,#0f172a 0%,#1e293b 100%)}
+    .left::before{content:'';position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(37,99,235,.12),transparent 65%);top:-150px;right:-150px;pointer-events:none}
+    .left::after{content:'';position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(99,102,241,.08),transparent 65%);bottom:-100px;left:-80px;pointer-events:none}
+
+    .brand{display:flex;align-items:center;gap:12px;position:relative;z-index:1}
+    .brand-mark{width:44px;height:44px;background:linear-gradient(135deg,var(--brand),var(--brand-dark));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 4px 16px rgba(37,99,235,.4)}
+    .brand-name{font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:800;color:#f1f5f9}
+    .brand-tag{display:block;font-size:10px;color:#64748b;letter-spacing:.8px;text-transform:uppercase;font-weight:500;margin-top:1px}
+
+    .hero{position:relative;z-index:1}
+    .hero h1{font-family:'Plus Jakarta Sans',sans-serif;font-size:38px;font-weight:800;color:#f1f5f9;line-height:1.18;margin-bottom:14px;letter-spacing:-.5px}
+    .hero h1 em{font-style:normal;background:linear-gradient(90deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .hero p{font-size:14.5px;color:#64748b;line-height:1.65;max-width:380px}
+
+    .features{position:relative;z-index:1;display:flex;flex-direction:column;gap:10px}
+    .feat{display:flex;align-items:center;gap:12px;font-size:13px;color:#64748b}
+    .feat-dot{width:20px;height:20px;border-radius:50%;background:rgba(37,99,235,.15);border:1px solid rgba(37,99,235,.25);display:flex;align-items:center;justify-content:center;font-size:10px;color:#60a5fa;flex-shrink:0;font-weight:700}
+
+    /* Right panel */
+    .right{width:520px;background:#fff;display:flex;align-items:center;justify-content:center;padding:40px 48px;box-shadow:-8px 0 48px rgba(0,0,0,.12)}
+    .form-wrap{width:100%}
+    .form-wrap h2{font-family:'Plus Jakarta Sans',sans-serif;font-size:26px;font-weight:800;color:var(--text-1);margin-bottom:6px;letter-spacing:-.3px}
+    .form-wrap>p{font-size:13.5px;color:var(--text-2);margin-bottom:28px}
+
+    #alertContainer{margin-bottom:8px}
+    .alert{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:8px;font-size:13px;font-weight:500;margin-bottom:8px;border:1px solid transparent;animation:slideDown .25s ease}
+    @keyframes slideDown{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+    .alert-error{background:#fef2f2;color:#991b1b;border-color:#fecaca}
+    .alert-success{background:#ecfdf5;color:#065f46;border-color:#a7f3d0}
+    .alert-warning{background:#fffbeb;color:#92400e;border-color:#fde68a}
+
+    .form-group{margin-bottom:18px}
+    .form-label{display:block;font-size:11.5px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;color:var(--text-2);margin-bottom:7px}
+    .form-input{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;color:var(--text-1);transition:.18s ease;background:#fff}
+    .form-input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+    .form-input::placeholder{color:var(--text-3)}
+
+    .password-wrap{position:relative}
+    .pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-3);font-size:13px;padding:2px}
+    .pw-toggle:hover{color:var(--text-2)}
+
+    .submit-btn{width:100%;padding:12px;background:var(--text-1);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;transition:.18s ease;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px}
+    .submit-btn:hover:not(:disabled){background:#1e293b}
+    .submit-btn:disabled{opacity:.6;cursor:not-allowed}
+
+    /* Demo accounts */
+    .demo-section{margin-top:26px;padding-top:22px;border-top:1px solid var(--border)}
+    .demo-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text-3);margin-bottom:10px}
+    .demo-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+    .demo-card{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;transition:.15s ease;background:#fff}
+    .demo-card:hover{border-color:var(--brand);background:#f8fbff;box-shadow:0 0 0 3px rgba(37,99,235,.06)}
+    .demo-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .dot-admin  {background:#ef4444}
+    .dot-doctor {background:#3b82f6}
+    .dot-recept {background:#10b981}
+    .dot-bill   {background:#f59e0b}
+    .demo-info strong{font-size:12.5px;font-weight:600;color:var(--text-1);display:block;line-height:1.2}
+    .demo-info span{font-size:11px;color:var(--text-3)}
+
+    @media(max-width:900px){.left{display:none}.right{width:100%;box-shadow:none;padding:32px 24px}}
+    @media(max-width:480px){.right{padding:24px 16px}.demo-grid{grid-template-columns:1fr 1fr}}
+  </style>
+</head>
+<body>
+<div class="left">
+  <div class="brand">
+    <div class="brand-mark">🏥</div>
+    <div><div class="brand-name">MediCore</div><span class="brand-tag">Hospital Management System</span></div>
+  </div>
+  <div class="hero">
+    <h1>Healthcare ops,<br><em>simplified.</em></h1>
+    <p>One platform for patients, appointments, medical records, and billing — with role-based access built in from the ground up.</p>
+  </div>
+  <div class="features">
+    <div class="feat"><div class="feat-dot">✓</div>Role-based access — Admin, Doctor, Billing, Receptionist</div>
+    <div class="feat"><div class="feat-dot">✓</div>Complete audit trail on every data change</div>
+    <div class="feat"><div class="feat-dot">✓</div>Appointment scheduling with conflict detection</div>
+    <div class="feat"><div class="feat-dot">✓</div>Wellness eligibility and tiered billing discounts</div>
+    <div class="feat"><div class="feat-dot">✓</div>Rate-limited, hardened authentication</div>
+  </div>
+</div>
+
+<div class="right">
+  <div class="form-wrap">
+    <h2>Welcome back</h2>
+    <p>Sign in to your hospital dashboard</p>
+
+    <div id="alertContainer"></div>
+
+    <div class="form-group">
+      <label class="form-label">Username</label>
+      <input type="text" id="username" class="form-input" placeholder="Enter your username" autocomplete="username" autofocus>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <div class="password-wrap">
+        <input type="password" id="password" class="form-input" placeholder="Enter your password" autocomplete="current-password">
+        <button class="pw-toggle" type="button" onclick="togglePw()" id="pwToggle" title="Show/hide password">👁</button>
+      </div>
+    </div>
+    <button class="submit-btn" id="loginBtn" onclick="doLogin()">
+      <span id="btnText">Sign In</span>
+      <span>→</span>
+    </button>
+
+    <div class="demo-section">
+      <div class="demo-label">Demo accounts — password: <code>password</code></div>
+      <div class="demo-grid">
+        <div class="demo-card" onclick="fill('admin','password')"><div class="demo-dot dot-admin"></div><div class="demo-info"><strong>admin</strong><span>Full Access</span></div></div>
+        <div class="demo-card" onclick="fill('doctor1','password')"><div class="demo-dot dot-doctor"></div><div class="demo-info"><strong>doctor1</strong><span>Medical Staff</span></div></div>
+        <div class="demo-card" onclick="fill('reception1','password')"><div class="demo-dot dot-recept"></div><div class="demo-info"><strong>reception1</strong><span>Front Desk</span></div></div>
+        <div class="demo-card" onclick="fill('billing1','password')"><div class="demo-dot dot-bill"></div><div class="demo-info"><strong>billing1</strong><span>Finance</span></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function fill(u,p){ document.getElementById('username').value=u; document.getElementById('password').value=p; }
+function togglePw(){
+  var f=document.getElementById('password');
+  f.type = f.type==='password'?'text':'password';
+  document.getElementById('pwToggle').textContent = f.type==='password'?'👁':'🙈';
+}
+function showAlert(msg,type){
+  var icons={success:'✓',error:'✕',warning:'⚠',info:'ℹ'};
+  var div=document.createElement('div');
+  div.className='alert alert-'+type;
+  div.innerHTML='<span>'+icons[type]+'</span> '+msg;
+  var c=document.getElementById('alertContainer');
+  c.innerHTML=''; c.appendChild(div);
+}
+function doLogin(){
+  var u=document.getElementById('username').value.trim();
+  var p=document.getElementById('password').value;
+  if(!u||!p){showAlert('Username and password are required.','error');return;}
+  var btn=document.getElementById('loginBtn');
+  btn.disabled=true;
+  document.getElementById('btnText').textContent='Signing in…';
+  fetch('/api/login',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.ok){window.location.href=d.redirect||'/dashboard';}
+      else{showAlert(d.error||'Login failed.','error');btn.disabled=false;document.getElementById('btnText').textContent='Sign In';}
+    })
+    .catch(function(){showAlert('Network error. Please try again.','error');btn.disabled=false;document.getElementById('btnText').textContent='Sign In';});
+}
+document.addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
+</script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Front Desk — MediCore HMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/medicore.css">
+</head>
+<body>
+<div class="mobile-topbar" id="mobileTopbar"><button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span><span></span></button><a href="/dashboard" class="mobile-brand"><div class="mobile-brand-icon">🏥</div><strong>MediCore</strong></a></div>
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand"><a href="/dashboard" class="brand-logo"><div class="brand-icon">🏥</div><div class="brand-text"><strong>MediCore</strong><span>Hospital MS</span></div></a></div>
+  <div class="sidebar-user"><div class="user-avatar" id="userAvatar">R</div><div class="user-info"><div class="user-name" id="userName">Loading…</div><span class="role-pill" id="userRole"></span></div></div>
+  <nav class="sidebar-nav" id="sidebarNav"></nav>
+  <div class="sidebar-footer"><a href="#" class="logout-btn" onclick="doLogout()"><span>⏻</span> Sign Out</a></div>
+</aside>
+<main class="main">
+  <header class="topbar">
+    <div><div class="page-title">Front Desk</div></div>
+    <div class="topbar-actions">
+      <a href="/register-patient" class="topbar-btn btn-secondary">➕ Register Patient</a>
+      <a href="/appointments/schedule" class="topbar-btn btn-accent">📅 Schedule Appt</a>
+    </div>
+  </header>
+  <div class="content-area">
+    <div id="alertContainer" class="alerts"></div>
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card stat-green"><div class="skeleton skeleton-card" style="height:80px;"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-left"><div class="card-title">📅 Today's Schedule</div><div class="card-subtitle" id="todayDate"></div></div>
+        <span class="badge badge-RECEPTIONIST">Front Desk</span>
+      </div>
+      <div id="apptContent"></div>
+    </div>
+    <div class="two-col">
+      <div class="restricted-card"><div class="lock">🔒</div><strong>Medical Records</strong><p>Restricted to medical staff only.</p></div>
+      <div class="restricted-card"><div class="lock">🔒</div><strong>Billing Information</strong><p>Restricted to billing staff and administrators.</p></div>
+    </div>
+  </div>
+</main>
+<script src="/static/js/medicore.js"></script>
+<script>
+HMS.init();
+document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-US', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+window.onHMSReady = function() {
+  document.getElementById('apptContent').innerHTML = HMS.skeletonRows(4, 5);
+  HMS.api.get('/api/dashboard/receptionist').then(function(d) {
+    if (!d.ok) return;
+    document.getElementById('statsGrid').innerHTML = '<div class="stat-card stat-green"><div class="stat-icon-wrap stat-icon-green">📅</div><div class="stat-value">' + d.today_appointments.length + '</div><div class="stat-label">Today\'s Appointments</div></div>';
+    var appts = d.today_appointments;
+    if (!appts.length) { document.getElementById('apptContent').innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><h4>No appointments today</h4><p>Schedule a new appointment to get started.</p></div>'; return; }
+    var rows = appts.map(function(a) {
+      return '<tr><td class="fw-600">' + a.appointment_time + '</td><td class="col-name">' + a.patient_first + ' ' + a.patient_last + '</td><td>Dr. ' + a.doctor_last + '</td><td>' + HMS.statusBadge(a.status) + '</td></tr>';
+    }).join('');
+    document.getElementById('apptContent').innerHTML = '<div class="table-container"><table class="data-table"><thead><tr><th>Time</th><th>Patient</th><th>Doctor</th><th>Status</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  });
+};
+</script>
+</body>
+</html>

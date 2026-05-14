@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patients — MediCore HMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/medicore.css">
+</head>
+<body>
+<div class="mobile-topbar" id="mobileTopbar"><button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span><span></span></button><a href="/dashboard" class="mobile-brand"><div class="mobile-brand-icon">🏥</div><strong>MediCore</strong></a></div>
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand"><a href="/dashboard" class="brand-logo"><div class="brand-icon">🏥</div><div class="brand-text"><strong>MediCore</strong><span>Hospital MS</span></div></a></div>
+  <div class="sidebar-user"><div class="user-avatar" id="userAvatar">U</div><div class="user-info"><div class="user-name" id="userName">Loading…</div><span class="role-pill" id="userRole"></span></div></div>
+  <nav class="sidebar-nav" id="sidebarNav"></nav>
+  <div class="sidebar-footer"><a href="#" class="logout-btn" onclick="doLogout()"><span>⏻</span> Sign Out</a></div>
+</aside>
+
+<main class="main">
+  <header class="topbar">
+    <div><div class="page-title">Patient Directory</div></div>
+    <div class="topbar-actions" id="topbarActions"></div>
+  </header>
+  <div class="content-area">
+    <div id="alertContainer" class="alerts"></div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-left">
+          <div class="card-title">👥 All Patients</div>
+          <div class="card-subtitle" id="patientCount">Loading…</div>
+        </div>
+        <!-- Live search -->
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="search-input" id="searchInput" placeholder="Search name, phone…">
+        </div>
+      </div>
+      <div id="tableContent"></div>
+      <div id="paginationArea"></div>
+    </div>
+  </div>
+</main>
+
+<script src="/static/js/medicore.js"></script>
+<script>
+var _page = 1;
+var _search = '';
+var _role = '';
+
+HMS.init();
+
+window.onHMSReady = function(user) {
+  _role = user.role;
+  if (['ADMIN','RECEPTIONIST'].indexOf(user.role) !== -1) {
+    document.getElementById('topbarActions').innerHTML = '<a href="/register-patient" class="topbar-btn btn-accent">➕ Register Patient</a>';
+  }
+  HMS.setupLiveSearch('searchInput', function(q) { _search = q; _page = 1; loadPatients(); });
+  loadPatients();
+};
+
+function loadPatients() {
+  document.getElementById('tableContent').innerHTML = HMS.skeletonRows(6, 6);
+  document.getElementById('paginationArea').innerHTML = '';
+  HMS.api.get('/api/patients?page=' + _page + '&per_page=20&q=' + encodeURIComponent(_search)).then(function(d) {
+    if (!d.ok) { HMS.showAlert('Failed to load patients.', 'error'); return; }
+    var pg = d.pagination;
+    document.getElementById('patientCount').textContent = pg.total + ' patient' + (pg.total !== 1 ? 's' : '') + (_search ? ' matching "' + _search + '"' : '');
+
+    if (!d.patients.length) {
+      document.getElementById('tableContent').innerHTML = '<div class="empty-state"><div class="empty-icon">👥</div><h4>No patients found</h4><p>' + (_search ? 'No results for "' + _search + '".' : 'Register your first patient to get started.') + '</p></div>';
+      return;
+    }
+
+    var rows = d.patients.map(function(p) {
+      var blood = p.blood_group ? '<span class="blood-badge">' + p.blood_group + '</span>' : '<span class="text-muted">—</span>';
+      return '<tr>' +
+        '<td class="col-id">#' + p.patient_id + '</td>' +
+        '<td class="col-name">' + p.first_name + ' ' + p.last_name + '</td>' +
+        '<td class="text-sm">' + (p.age || '—') + ' yrs</td>' +
+        '<td class="text-sm hide-mobile">' + (p.gender || '—') + '</td>' +
+        '<td class="hide-mobile"><div class="text-sm">' + (p.phone || '—') + '</div><div style="font-size:11.5px;color:var(--text-muted);">' + (p.email || '') + '</div></td>' +
+        '<td>' + blood + '</td>' +
+        '<td><a href="/patients/' + p.patient_id + '" class="topbar-btn btn-ghost btn-xs">View →</a></td>' +
+        '</tr>';
+    }).join('');
+    document.getElementById('tableContent').innerHTML = '<div class="table-container"><table class="data-table"><thead><tr><th>ID</th><th>Name</th><th>Age</th><th class="hide-mobile">Gender</th><th class="hide-mobile">Contact</th><th>Blood</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+
+    // Pagination
+    document.getElementById('paginationArea').innerHTML = HMS.renderPagination(pg, function(p) {
+      _page = p; loadPatients();
+    });
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patient Profile — MediCore HMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/medicore.css">
+</head>
+<body>
+<div class="mobile-topbar" id="mobileTopbar"><button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span><span></span></button><a href="/dashboard" class="mobile-brand"><div class="mobile-brand-icon">🏥</div><strong>MediCore</strong></a></div>
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand"><a href="/dashboard" class="brand-logo"><div class="brand-icon">🏥</div><div class="brand-text"><strong>MediCore</strong><span>Hospital MS</span></div></a></div>
+  <div class="sidebar-user"><div class="user-avatar" id="userAvatar">U</div><div class="user-info"><div class="user-name" id="userName">Loading…</div><span class="role-pill" id="userRole"></span></div></div>
+  <nav class="sidebar-nav" id="sidebarNav"></nav>
+  <div class="sidebar-footer"><a href="#" class="logout-btn" onclick="doLogout()"><span>⏻</span> Sign Out</a></div>
+</aside>
+<main class="main">
+  <header class="topbar">
+    <div>
+      <div class="page-title" id="pageTitle">Patient Profile</div>
+      <div class="breadcrumb" style="margin-top:2px;"><a href="/patients" class="breadcrumb">Patients</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current" id="breadcrumbName">Loading…</span></div>
+    </div>
+    <div class="topbar-actions">
+      <a href="/patients" class="topbar-btn btn-secondary">← Back</a>
+      <span id="addRecordBtn"></span>
+    </div>
+  </header>
+  <div class="content-area">
+    <div id="alertContainer" class="alerts"></div>
+    <div id="pageContent">
+      <div class="card"><div class="card-body"><div class="skeleton skeleton-card" style="height:80px;"></div></div></div>
+      <div class="card"><div class="card-body"><div class="skeleton skeleton-card" style="height:160px;"></div></div></div>
+    </div>
+  </div>
+</main>
+<script src="/static/js/medicore.js"></script>
+<script>
+HMS.init();
+var pid = window.location.pathname.split('/').pop();
+window.onHMSReady = function(user) {
+  if (['ADMIN','DOCTOR'].indexOf(user.role) !== -1)
+    document.getElementById('addRecordBtn').innerHTML = '<a href="/medical-records/add?patient_id=' + pid + '" class="topbar-btn btn-accent">📝 Add Record</a>';
+
+  HMS.api.get('/api/patients/' + pid).then(function(d) {
+    if (!d.ok) {
+      document.getElementById('pageContent').innerHTML = '<div class="card"><div class="card-body"><div class="empty-state"><div class="empty-icon">❌</div><h4>Patient not found</h4><p>' + (d.error||'') + '</p></div></div></div>';
+      return;
+    }
+    var p = d.patient;
+    document.getElementById('pageTitle').textContent = p.first_name + ' ' + p.last_name;
+    document.getElementById('breadcrumbName').textContent = p.first_name + ' ' + p.last_name;
+
+    // Medical section
+    var medSection = '';
+    if (['ADMIN','DOCTOR'].indexOf(user.role) !== -1) {
+      var mh = d.medical_history;
+      var medRows = mh.map(function(r) {
+        return '<tr><td class="text-sm" style="white-space:nowrap;">' + r.record_date + '</td><td class="text-sm">Dr. ' + r.doctor_last + '</td><td class="text-sm">' + r.diagnosis + '</td><td class="text-sm text-secondary">' + (r.prescription||'—') + '</td></tr>';
+      }).join('');
+      medSection = '<div class="card"><div class="card-header"><div class="card-header-left"><div class="card-title">📝 Medical History</div><div class="card-subtitle">' + mh.length + ' record' + (mh.length!==1?'s':'') + '</div></div><a href="/medical-records/add?patient_id=' + p.patient_id + '" class="topbar-btn btn-accent btn-sm">+ Add</a></div>' +
+        (mh.length ? '<div class="table-container"><table class="data-table"><thead><tr><th>Date</th><th>Doctor</th><th>Diagnosis</th><th>Prescription</th></tr></thead><tbody>' + medRows + '</tbody></table></div>' :
+        '<div class="empty-state" style="padding:32px;"><div class="empty-icon">📋</div><h4>No records yet</h4></div>') + '</div>';
+    } else {
+      medSection = '<div class="restricted-card"><div class="lock">🔒</div><strong>Medical Records</strong><p>Access restricted to medical staff.</p></div>';
+    }
+
+    // Billing section
+    var billSection = '';
+    if (['ADMIN','BILLING'].indexOf(user.role) !== -1) {
+      var bh = d.billing_history;
+      var billRows = bh.map(function(b) {
+        return '<tr><td class="col-id">#' + b.bill_id + '</td><td class="fw-600">$' + parseFloat(b.total_amount).toFixed(2) + '</td><td>' + HMS.statusBadge(b.payment_status) + '</td><td class="text-sm">' + b.billing_date + '</td></tr>';
+      }).join('');
+      billSection = '<div class="card"><div class="card-header"><div class="card-header-left"><div class="card-title">💰 Billing History</div><div class="card-subtitle">' + bh.length + ' bill' + (bh.length!==1?'s':'') + '</div></div></div>' +
+        (bh.length ? '<div class="table-container"><table class="data-table"><thead><tr><th>Bill ID</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead><tbody>' + billRows + '</tbody></table></div>' :
+        '<div class="empty-state" style="padding:32px;"><div class="empty-icon">💰</div><h4>No billing records</h4></div>') + '</div>';
+    } else {
+      billSection = '<div class="restricted-card"><div class="lock">🔒</div><strong>Billing Information</strong><p>Access restricted to billing staff.</p></div>';
+    }
+
+    var initials = (p.first_name||'?')[0] + (p.last_name||'?')[0];
+    var blood = p.blood_group ? '<span class="blood-badge">' + p.blood_group + '</span>' : '';
+
+    document.getElementById('pageContent').innerHTML =
+      // Header card
+      '<div class="card"><div class="card-body" style="display:flex;align-items:center;gap:18px;">' +
+      '<div style="width:60px;height:60px;background:var(--brand-50);border:2px solid var(--brand-100);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--brand-600);font-weight:700;font-family:\'Plus Jakarta Sans\',sans-serif;flex-shrink:0;">' + initials + '</div>' +
+      '<div style="flex:1;"><h2 style="font-family:\'Plus Jakarta Sans\',sans-serif;font-size:20px;font-weight:700;letter-spacing:-.2px;">' + p.first_name + ' ' + p.last_name + '</h2>' +
+      '<div style="display:flex;align-items:center;gap:10px;margin-top:5px;flex-wrap:wrap;"><span class="font-mono text-muted">Patient #' + p.patient_id + '</span>' + blood + '</div></div></div></div>' +
+      // Info card
+      '<div class="card"><div class="card-header"><div class="card-title">📋 Basic Information</div></div><div class="card-body">' +
+      '<div class="info-grid">' +
+      '<div class="info-item"><label>Age</label><div class="val">' + (p.age||'—') + ' yrs</div></div>' +
+      '<div class="info-item"><label>Gender</label><div class="val">' + (p.gender||'—') + '</div></div>' +
+      '<div class="info-item"><label>Blood Group</label><div class="val" style="color:var(--danger);">' + (p.blood_group||'—') + '</div></div>' +
+      '<div class="info-item"><label>Phone</label><div class="val" style="font-size:14px;font-weight:500;">' + (p.phone||'—') + '</div></div>' +
+      '<div class="info-item"><label>Email</label><div class="val" style="font-size:13px;font-weight:500;">' + (p.email||'—') + '</div></div>' +
+      '<div class="info-item"><label>Insurance ID</label><div class="val" style="font-size:13px;font-weight:500;">' + (p.insurance_id||'—') + '</div></div>' +
+      '</div><hr class="divider">' +
+      '<div class="two-col">' +
+      '<div class="info-item"><label>Address</label><div class="val" style="font-size:13.5px;font-weight:400;">' + (p.address||'Not provided') + '</div></div>' +
+      '<div class="info-item"><label>Emergency Contact</label><div class="val" style="font-size:13.5px;font-weight:400;">' + (p.emergency_contact_name||'—') + (p.emergency_contact_phone ? ' · ' + p.emergency_contact_phone : '') + '</div></div>' +
+      '</div></div></div>' +
+      medSection + billSection;
+  });
+};
+</script>
+</body>
+</html>

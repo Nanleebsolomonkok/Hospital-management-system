@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Billing Dashboard — MediCore HMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/medicore.css">
+</head>
+<body>
+<div class="mobile-topbar" id="mobileTopbar"><button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span><span></span></button><a href="/dashboard" class="mobile-brand"><div class="mobile-brand-icon">🏥</div><strong>MediCore</strong></a></div>
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand"><a href="/dashboard" class="brand-logo"><div class="brand-icon">🏥</div><div class="brand-text"><strong>MediCore</strong><span>Hospital MS</span></div></a></div>
+  <div class="sidebar-user"><div class="user-avatar" id="userAvatar">B</div><div class="user-info"><div class="user-name" id="userName">Loading…</div><span class="role-pill" id="userRole"></span></div></div>
+  <nav class="sidebar-nav" id="sidebarNav"></nav>
+  <div class="sidebar-footer"><a href="#" class="logout-btn" onclick="doLogout()"><span>⏻</span> Sign Out</a></div>
+</aside>
+<main class="main">
+  <header class="topbar">
+    <div><div class="page-title">Billing Dashboard</div></div>
+    <div class="topbar-actions"><a href="/billing" class="topbar-btn btn-secondary">View All Bills</a></div>
+  </header>
+  <div class="content-area">
+    <div id="alertContainer" class="alerts"></div>
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card stat-amber"><div class="skeleton skeleton-card" style="height:80px;"></div></div>
+      <div class="stat-card stat-green"><div class="skeleton skeleton-card" style="height:80px;"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-left"><div class="card-title">⏳ Pending Payments</div><div class="card-subtitle">Bills awaiting processing</div></div>
+        <span class="badge badge-BILLING">Finance</span>
+      </div>
+      <div id="billContent"></div>
+    </div>
+    <div class="restricted-card"><div class="lock">🔒</div><strong>Medical Records</strong><p>Billing staff cannot access patient medical history.</p></div>
+  </div>
+</main>
+<script src="/static/js/medicore.js"></script>
+<script>
+HMS.init();
+function loadData() {
+  document.getElementById('billContent').innerHTML = HMS.skeletonRows(4, 4);
+  HMS.api.get('/api/dashboard/billing').then(function(d) {
+    if (!d.ok) return;
+    document.getElementById('statsGrid').innerHTML =
+      '<div class="stat-card stat-amber"><div class="stat-icon-wrap stat-icon-amber">⏳</div><div class="stat-value">' + d.pending_bills.length + '</div><div class="stat-label">Pending Bills</div></div>' +
+      '<div class="stat-card stat-green"><div class="stat-icon-wrap stat-icon-green">💵</div><div class="stat-value">$' + parseFloat(d.today_revenue).toFixed(0) + '</div><div class="stat-label">Today\'s Revenue</div></div>';
+    var bills = d.pending_bills;
+    if (!bills.length) { document.getElementById('billContent').innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><h4>All caught up!</h4><p>No pending bills at this time.</p></div>'; return; }
+    var rows = bills.map(function(b) {
+      return '<tr><td class="col-id">#' + b.bill_id + '</td><td class="col-name">' + b.patient_first + ' ' + b.patient_last + '</td>' +
+        '<td><strong style="color:var(--success);">$' + parseFloat(b.total_amount).toFixed(2) + '</strong></td>' +
+        '<td><button class="topbar-btn btn-success btn-xs" onclick="pay(' + b.bill_id + ',' + b.total_amount + ')">💵 Process</button></td></tr>';
+    }).join('');
+    document.getElementById('billContent').innerHTML = '<div class="table-container"><table class="data-table"><thead><tr><th>Bill ID</th><th>Patient</th><th>Amount</th><th>Action</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  });
+}
+function pay(id, amount) {
+  HMS.api.post('/api/billing/process/' + id, {payment_method:'Cash', paid_amount:amount}).then(function(d) {
+    HMS.showAlert(d.message || (d.ok ? 'Payment processed.' : 'Error.'), d.ok ? 'success' : 'error');
+    if (d.ok) loadData();
+  });
+}
+window.onHMSReady = loadData;
+</script>
+</body>
+</html>

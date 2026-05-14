@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Schedule Appointment — MediCore HMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/medicore.css">
+</head>
+<body>
+<div class="mobile-topbar" id="mobileTopbar"><button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span><span></span></button><a href="/dashboard" class="mobile-brand"><div class="mobile-brand-icon">🏥</div><strong>MediCore</strong></a></div>
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand"><a href="/dashboard" class="brand-logo"><div class="brand-icon">🏥</div><div class="brand-text"><strong>MediCore</strong><span>Hospital MS</span></div></a></div>
+  <div class="sidebar-user"><div class="user-avatar" id="userAvatar">U</div><div class="user-info"><div class="user-name" id="userName">Loading…</div><span class="role-pill" id="userRole"></span></div></div>
+  <nav class="sidebar-nav" id="sidebarNav"></nav>
+  <div class="sidebar-footer"><a href="#" class="logout-btn" onclick="doLogout()"><span>⏻</span> Sign Out</a></div>
+</aside>
+<main class="main">
+  <header class="topbar">
+    <div><div class="page-title">Schedule Appointment</div><div class="breadcrumb" style="margin-top:2px;"><a href="/appointments">Appointments</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">New</span></div></div>
+    <div class="topbar-actions"><a href="/appointments" class="topbar-btn btn-secondary">Cancel</a></div>
+  </header>
+  <div class="content-area">
+    <div id="alertContainer" class="alerts"></div>
+    <div style="max-width:640px;">
+      <div class="card">
+        <div class="card-header"><div class="card-title">📅 New Appointment</div></div>
+        <div class="card-body">
+          <div class="form-group"><label class="form-label required">Patient</label><select class="form-control" id="patient_id" required><option value="">Loading patients…</option></select></div>
+          <div class="form-group"><label class="form-label required">Doctor</label><select class="form-control" id="doctor_id" required><option value="">Loading doctors…</option></select></div>
+          <div class="form-grid form-grid-2" style="margin-top:4px;">
+            <div class="form-group"><label class="form-label required">Date</label><input type="date" class="form-control" id="appointment_date" required></div>
+            <div class="form-group"><label class="form-label required">Time</label><input type="time" class="form-control" id="appointment_time" required></div>
+          </div>
+          <div class="form-group"><label class="form-label required">Reason for Visit</label><textarea class="form-control" id="reason" rows="3" required placeholder="Describe the purpose of this appointment…"></textarea></div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-bottom:24px;">
+        <a href="/appointments" class="topbar-btn btn-secondary">Cancel</a>
+        <button class="topbar-btn btn-accent" id="submitBtn" onclick="submit()">📅 Schedule Appointment</button>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="/static/js/medicore.js"></script>
+<script>
+HMS.init();
+window.onHMSReady=function(){
+  var today=new Date().toISOString().split('T')[0];
+  document.getElementById('appointment_date').min=today;
+  HMS.api.get('/api/form-data/appointments').then(function(d){
+    if(!d.ok)return;
+    document.getElementById('patient_id').innerHTML='<option value="">Select a patient</option>'+d.patients.map(function(p){return '<option value="'+p.patient_id+'">'+p.first_name+' '+p.last_name+'</option>';}).join('');
+    document.getElementById('doctor_id').innerHTML='<option value="">Select a doctor</option>'+d.doctors.map(function(doc){return '<option value="'+doc.doctor_id+'">Dr. '+doc.first_name+' '+doc.last_name+' — '+doc.specialization+'</option>';}).join('');
+  });
+};
+function g(id){return document.getElementById(id).value.trim();}
+function submit(){
+  if(!g('patient_id')||!g('doctor_id')||!g('appointment_date')||!g('appointment_time')||!g('reason')){HMS.showAlert('Please fill all required fields.','error');return;}
+  var btn=document.getElementById('submitBtn');btn.disabled=true;btn.textContent='Scheduling…';
+  HMS.api.post('/api/appointments/schedule',{patient_id:parseInt(g('patient_id')),doctor_id:parseInt(g('doctor_id')),appointment_date:g('appointment_date'),appointment_time:g('appointment_time'),reason:g('reason')})
+  .then(function(d){
+    if(d.ok){HMS.showAlert(d.message,'success');setTimeout(function(){window.location.href='/appointments';},1200);}
+    else{HMS.showAlert(d.error||'Could not schedule appointment.','error');btn.disabled=false;btn.textContent='📅 Schedule Appointment';}
+  });
+}
+</script>
+</body>
+</html>

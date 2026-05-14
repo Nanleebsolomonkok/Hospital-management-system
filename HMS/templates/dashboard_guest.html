@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guest Access — MediCore HMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/medicore.css">
+</head>
+<body>
+<div class="mobile-topbar" id="mobileTopbar"><button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span><span></span></button><a href="/dashboard" class="mobile-brand"><div class="mobile-brand-icon">🏥</div><strong>MediCore</strong></a></div>
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand"><a href="/dashboard" class="brand-logo"><div class="brand-icon">🏥</div><div class="brand-text"><strong>MediCore</strong><span>Hospital MS</span></div></a></div>
+  <div class="sidebar-user"><div class="user-avatar" id="userAvatar">G</div><div class="user-info"><div class="user-name" id="userName">Loading…</div><span class="role-pill" id="userRole"></span></div></div>
+  <nav class="sidebar-nav" id="sidebarNav"></nav>
+  <div class="sidebar-footer"><a href="#" class="logout-btn" onclick="doLogout()"><span>⏻</span> Sign Out</a></div>
+</aside>
+<main class="main">
+  <header class="topbar"><div class="page-title">Guest Access</div></header>
+  <div class="content-area">
+    <div class="card" style="border-left:4px solid var(--warning);">
+      <div class="card-body" style="display:flex;align-items:center;gap:16px;">
+        <span style="font-size:32px;">⚠️</span>
+        <div style="flex:1;"><div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:700;margin-bottom:4px;">Limited Access</div><p class="text-muted">You have guest-level access. Contact your administrator to request additional permissions.</p></div>
+        <span class="badge badge-slate">Read-Only</span>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="restricted-card"><div class="lock">🔒</div><strong>Patient Directory</strong><p>Requires DOCTOR, RECEPTIONIST, or ADMIN role.</p></div>
+      <div class="restricted-card"><div class="lock">🔒</div><strong>Medical Records</strong><p>Requires DOCTOR or ADMIN role.</p></div>
+      <div class="restricted-card"><div class="lock">🔒</div><strong>Billing &amp; Finance</strong><p>Requires BILLING or ADMIN role.</p></div>
+      <div class="restricted-card"><div class="lock">🔒</div><strong>Admin Panel</strong><p>Requires ADMIN role.</p></div>
+    </div>
+  </div>
+</main>
+<script src="/static/js/medicore.js"></script>
+<script>HMS.init();</script>
+</body>
+</html>
