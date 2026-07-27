@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In — MediCore HMS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #f8fafc;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .login-card {
+            background: #ffffff;
+            width: 100%; max-width: 420px;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01);
+            border: 1px solid #e2e8f0;
+        }
+        .brand {
+            display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 32px;
+        }
+        .brand-icon {
+            width: 32px; height: 32px; color: #0f766e;
+        }
+        .brand-text { font-size: 20px; font-weight: 700; }
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; color: #334155; }
+        .form-control {
+            width: 100%; padding: 10px 12px;
+            border: 1px solid #cbd5e1; border-radius: 6px;
+            font-size: 14px; font-family: inherit;
+        }
+        .form-control:focus { outline: none; border-color: #0f766e; box-shadow: 0 0 0 3px #ccfbf1; }
+        .btn-primary {
+            width: 100%; padding: 10px;
+            background: #0f766e; color: white;
+            border: none; border-radius: 6px;
+            font-size: 14px; font-weight: 600; cursor: pointer;
+            transition: background 0.15s;
+        }
+        .btn-primary:hover { background: #0d9488; }
+        .demo-box {
+            margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0;
+        }
+        .demo-title { font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .demo-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .demo-btn {
+            padding: 8px; background: #f8fafc; border: 1px solid #e2e8f0;
+            border-radius: 6px; font-size: 12px; font-weight: 500;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .demo-btn:hover { background: #f1f5f9; border-color: #cbd5e1; }
+        .alert { padding: 12px; border-radius: 6px; font-size: 13px; margin-bottom: 20px; display: none; }
+        .alert-error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+        .alert-success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+        @media (max-width: 600px) {
+            .login-card { width: 90%; margin: 20px; }
+            .login-body { padding: 32px 24px; }
+            .demo-grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 400px) {
+            .demo-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <div class="brand">
+        <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+        <span class="brand-text">MediCore</span>
+    </div>
+
+    <div id="alertBox" class="alert"></div>
+
+    <form id="loginForm">
+        <div class="form-group">
+            <label class="form-label">Username</label>
+            <input type="text" id="username" class="form-control" required autofocus>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" id="password" class="form-control" required>
+        </div>
+        <button type="submit" class="btn-primary" id="submitBtn">Sign In</button>
+    </form>
+
+    <div class="demo-box">
+        <div class="demo-title">Quick Demo Login</div>
+        <div class="demo-grid">
+            <button class="demo-btn" onclick="fill('admin')">Admin</button>
+            <button class="demo-btn" onclick="fill('doctor1')">Doctor</button>
+            <button class="demo-btn" onclick="fill('reception1')">Reception</button>
+            <button class="demo-btn" onclick="fill('billing1')">Billing</button>
+            <button class="demo-btn" onclick="fill('pharm1')">Pharmacist</button>
+            <button class="demo-btn" onclick="fill('lab1')">Lab Tech</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function fill(user) {
+        document.getElementById('username').value = user;
+        document.getElementById('password').value = user === 'pharm1' || user === 'lab1' ? 'password123' : 'password';
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const u = document.getElementById('username').value;
+        const p = document.getElementById('password').value;
+        const btn = document.getElementById('submitBtn');
+        const alertBox = document.getElementById('alertBox');
+        
+        btn.textContent = 'Signing in...'; btn.disabled = true;
+        alertBox.style.display = 'none';
+
+        try {
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username: u, password: p})
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                alertBox.className = 'alert alert-success';
+                alertBox.textContent = 'Login successful!';
+                alertBox.style.display = 'block';
+                setTimeout(() => window.location.href = '/app', 500);
+            } else {
+                alertBox.className = 'alert alert-error';
+                alertBox.textContent = data.message;
+                alertBox.style.display = 'block';
+                btn.textContent = 'Sign In'; btn.disabled = false;
+            }
+        } catch (e) {
+            alertBox.className = 'alert alert-error';
+            alertBox.textContent = 'Network error.';
+            alertBox.style.display = 'block';
+            btn.textContent = 'Sign In'; btn.disabled = false;
+        }
+    });
+</script>
+
+</body>
+</html>
