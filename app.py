@@ -19,11 +19,11 @@ app.secret_key = os.environ.get('SECRET_KEY', 'change-this-in-production')
 # ============================================
 
 DB_CONFIG = {
-    'host':     os.environ.get('DB_HOST', 'localhost'),
-    'user':     os.environ.get('DB_USER', 'root'),
-    'password': os.environ.get('DB_PASSWORD', ''),
+    'host':     os.environ.get('DB_HOST', 'kafka-3d6dfa32-nanleebsolomon.c.aivencloud.com'),
+    'user':     os.environ.get('DB_USER', 'avnadmin'),
+    'password': os.environ.get('DB_PASSWORD', 'AVNS_-d5hgiKbQNp9Kyqe8Fg'),
     'database': os.environ.get('DB_NAME', 'HospitalManagement_STU001'),
-    'port':     int(os.environ.get('DB_PORT', 3306)),
+    'port':     int(os.environ.get('DB_PORT', 14624)),
     'autocommit': False,
 }
 
